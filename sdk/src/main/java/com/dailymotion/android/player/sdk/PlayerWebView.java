@@ -534,49 +534,28 @@ public class PlayerWebView extends WebView implements AdIdTask.AdIdTaskListener 
 
     public PlayerWebView(Context context) {
         super(context);
-        new AdIdTask(context, this).execute();
     }
 
     public PlayerWebView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        new AdIdTask(context, this).execute();
     }
 
     public PlayerWebView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        new AdIdTask(context, this).execute();
     }
-
-    private void continueInitialize() {
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (mHasAdId) {
-                    initialize(mBaseUrl, mQueryParameters, mHttpHeaders);
-                } else {
-                    continueInitialize();
-                }
-            }
-        },500);
-    }
-
-    @Override
-    public void onResult(String result) {
-        mAdId = result;
-        mHasAdId = true;
-    }
-
-    public void initialize(String baseUrl, Map<String, String> queryParameters, Map<String, String> httpHeaders) {
-
-        if (!mHasAdId) {
-            mBaseUrl = baseUrl;
-            mQueryParameters = queryParameters;
-            mHttpHeaders = httpHeaders;
-            continueInitialize();
-            return;
-        }
+    
+    public void initialize(final String baseUrl, final Map<String, String> queryParameters, final Map<String, String> httpHeaders) {
 
         mIsInitialized = true;
+        new AdIdTask(getContext(), new AdIdTask.AdIdTaskListener() {
+            @Override
+            public void onResult(String adId) {
+                finishInitialization(baseUrl, queryParameters, httpHeaders, adId);
+            }
+        }).execute();
+    }
+
+    public void finishInitialization(final String baseUrl, final Map<String, String> queryParameters, final Map<String, String> httpHeaders, String adId) {
         mGson = new Gson();
         WebSettings mWebSettings = getSettings();
         mWebSettings.setDomStorageEnabled(true);
