@@ -1,7 +1,6 @@
 package com.dailymotion.android.player.sampleapp
 
 import android.content.Context
-import com.dailymotion.websdksample.R
 import com.google.android.gms.cast.framework.CastOptions
 import com.google.android.gms.cast.framework.OptionsProvider
 import com.google.android.gms.cast.framework.SessionProvider
@@ -9,7 +8,7 @@ import com.google.android.gms.cast.framework.SessionProvider
 class CastOptionsProvider : OptionsProvider {
     override fun getCastOptions(context: Context): CastOptions {
         return CastOptions.Builder()
-                .setReceiverApplicationId("")
+                .setReceiverApplicationId("8F803A46")
                 .build()
     }
 

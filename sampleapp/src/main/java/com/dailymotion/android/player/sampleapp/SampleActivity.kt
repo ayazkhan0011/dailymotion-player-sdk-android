@@ -2,8 +2,6 @@ package com.dailymotion.android.player.sampleapp
 
 import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.view.Menu
@@ -15,19 +13,17 @@ import android.widget.EditText
 import android.widget.LinearLayout
 
 import com.dailymotion.android.player.sdk.PlayerWebView
-import com.dailymotion.websdksample.R
-import com.dailymotion.websdksample.R.id.*
 import kotlinx.android.synthetic.main.sample_activity.*
 
 import java.util.HashMap
-import com.google.android.gms.cast.framework.media.RemoteMediaClient
 import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaLoadOptions
 import com.google.android.gms.cast.MediaMetadata
-import com.google.android.gms.common.images.WebImage
-import com.google.android.gms.cast.MediaMetadata.KEY_SUBTITLE
 import com.google.android.gms.cast.MediaMetadata.MEDIA_TYPE_MOVIE
 import com.google.android.gms.cast.framework.*
+import com.google.android.gms.cast.framework.CastContext
+
+
 
 
 class SampleActivity : AppCompatActivity(), View.OnClickListener {
@@ -35,6 +31,7 @@ class SampleActivity : AppCompatActivity(), View.OnClickListener {
     val VIDEO_XID = "x26hv6c"
     private var mFullscreen = false
     private var sessionManager: SessionManager? = null
+    var chromecastConnected = true
 
     private inner class SessionManagerListenerImpl : SessionManagerListener<Session> {
         override fun onSessionResumeFailed(p0: Session?, p1: Int) {
@@ -56,24 +53,8 @@ class SampleActivity : AppCompatActivity(), View.OnClickListener {
         }
 
         override fun onSessionStarted(session: Session, sessionId: String) {
-            val castSession = session as CastSession
             dm_player_web_view.pause()
-
-            val movieMetadata = MediaMetadata(MEDIA_TYPE_MOVIE)
-
-            movieMetadata.putString(MediaMetadata.KEY_TITLE, "Video Title")
-            movieMetadata.putString(MediaMetadata.KEY_SUBTITLE, "Video Subtitle")
-
-            val mediaInfo = MediaInfo.Builder(VIDEO_XID)
-                    .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
-                    .setContentType("videos/mp4")
-                    .setMetadata(movieMetadata)
-                    .build()
-            val remoteMediaClient = castSession.getRemoteMediaClient()
-
-            val mediaLoadOptions = MediaLoadOptions.Builder()
-                    .build()
-            remoteMediaClient.load(mediaInfo, mediaLoadOptions)
+            chromecastConnected = true
         }
 
         override fun onSessionResumed(session: Session, wasSuspended: Boolean) {
@@ -81,7 +62,48 @@ class SampleActivity : AppCompatActivity(), View.OnClickListener {
 
         override fun onSessionEnded(session: Session, error: Int) {
             dm_player_web_view.play()
+            chromecastConnected = false
         }
+    }
+
+    fun chromecastLoad(xid: String) {
+        val castSession = CastContext.getSharedInstance(this).sessionManager.currentSession as CastSession
+
+        val movieMetadata = MediaMetadata(MEDIA_TYPE_MOVIE)
+
+        movieMetadata.putString(MediaMetadata.KEY_TITLE, "Video Title")
+        movieMetadata.putString(MediaMetadata.KEY_SUBTITLE, "Video Subtitle")
+
+        val mediaInfo = MediaInfo.Builder(xid)
+                .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
+                .setContentType("videos/mp4")
+                .setMetadata(movieMetadata)
+                .build()
+        val remoteMediaClient = castSession.getRemoteMediaClient()
+
+        val mediaLoadOptions = MediaLoadOptions.Builder()
+                .build()
+        remoteMediaClient.load(mediaInfo, mediaLoadOptions)
+    }
+
+    fun chromecastStop() {
+        val castSession = CastContext.getSharedInstance(this).sessionManager.currentSession as CastSession
+        castSession.remoteMediaClient.stop()
+    }
+
+    fun chromecastPlay() {
+        val castSession = CastContext.getSharedInstance(this).sessionManager.currentSession as CastSession
+        castSession.remoteMediaClient.play()
+    }
+
+    fun chromecastPause() {
+        val castSession = CastContext.getSharedInstance(this).sessionManager.currentSession as CastSession
+        castSession.remoteMediaClient.pause()
+    }
+
+    fun chromecastSeek(millis: Long) {
+        val castSession = CastContext.getSharedInstance(this).sessionManager.currentSession as CastSession
+        castSession.remoteMediaClient.seek(millis)
     }
 
     fun onFullScreenToggleRequested() {
@@ -185,15 +207,31 @@ class SampleActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onClick(v: View) {
         if (v.id == R.id.btnPlay) {
-            dm_player_web_view.play()
+            if (chromecastConnected) {
+                chromecastPlay()
+            } else {
+                dm_player_web_view.play()
+            }
         } else if (v.id == R.id.btnTogglePlay) {
             dm_player_web_view.togglePlay()
         } else if (v.id == R.id.btnPause) {
-            dm_player_web_view.pause()
+            if (chromecastConnected) {
+                chromecastPause()
+            } else {
+                dm_player_web_view.pause()
+            }
         } else if (v.id == R.id.btnSeek) {
-            dm_player_web_view.seek(30.0)
+            if (chromecastConnected) {
+                chromecastSeek(30000)
+            } else {
+                dm_player_web_view.seek(30.0)
+            }
         } else if (v.id == R.id.btnLoadVideo) {
-            dm_player_web_view.load("x19b6ui")
+            if (chromecastConnected) {
+                chromecastLoad(VIDEO_XID)
+            } else {
+                dm_player_web_view.load(VIDEO_XID)
+            }
         } else if (v.id == R.id.btnSetQuality) {
             dm_player_web_view.quality = "240"
         } else if (v.id == R.id.btnSetSubtitle) {
