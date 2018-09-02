@@ -2,6 +2,7 @@ package com.dailymotion.android.player.sampleapp
 
 import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
@@ -15,13 +16,73 @@ import android.widget.LinearLayout
 
 import com.dailymotion.android.player.sdk.PlayerWebView
 import com.dailymotion.websdksample.R
+import com.dailymotion.websdksample.R.id.*
 import kotlinx.android.synthetic.main.sample_activity.*
 
 import java.util.HashMap
+import com.google.android.gms.cast.framework.media.RemoteMediaClient
+import com.google.android.gms.cast.MediaInfo
+import com.google.android.gms.cast.MediaLoadOptions
+import com.google.android.gms.cast.MediaMetadata
+import com.google.android.gms.common.images.WebImage
+import com.google.android.gms.cast.MediaMetadata.KEY_SUBTITLE
+import com.google.android.gms.cast.MediaMetadata.MEDIA_TYPE_MOVIE
+import com.google.android.gms.cast.framework.*
+
 
 class SampleActivity : AppCompatActivity(), View.OnClickListener {
 
+    val VIDEO_XID = "x26hv6c"
     private var mFullscreen = false
+    private var sessionManager: SessionManager? = null
+
+    private inner class SessionManagerListenerImpl : SessionManagerListener<Session> {
+        override fun onSessionResumeFailed(p0: Session?, p1: Int) {
+        }
+
+        override fun onSessionSuspended(p0: Session?, p1: Int) {
+        }
+
+        override fun onSessionStarting(p0: Session?) {
+        }
+
+        override fun onSessionResuming(p0: Session?, p1: String?) {
+        }
+
+        override fun onSessionEnding(p0: Session?) {
+        }
+
+        override fun onSessionStartFailed(p0: Session?, p1: Int) {
+        }
+
+        override fun onSessionStarted(session: Session, sessionId: String) {
+            val castSession = session as CastSession
+            dm_player_web_view.pause()
+
+            val movieMetadata = MediaMetadata(MEDIA_TYPE_MOVIE)
+
+            movieMetadata.putString(MediaMetadata.KEY_TITLE, "Video Title")
+            movieMetadata.putString(MediaMetadata.KEY_SUBTITLE, "Video Subtitle")
+
+            val mediaInfo = MediaInfo.Builder(VIDEO_XID)
+                    .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
+                    .setContentType("videos/mp4")
+                    .setMetadata(movieMetadata)
+                    .build()
+            val remoteMediaClient = castSession.getRemoteMediaClient()
+
+            val mediaLoadOptions = MediaLoadOptions.Builder()
+                    .build()
+            remoteMediaClient.load(mediaInfo, mediaLoadOptions)
+        }
+
+        override fun onSessionResumed(session: Session, wasSuspended: Boolean) {
+        }
+
+        override fun onSessionEnded(session: Session, error: Int) {
+            dm_player_web_view.play()
+        }
+    }
 
     fun onFullScreenToggleRequested() {
         setFullScreenInternal(!mFullscreen)
@@ -50,12 +111,17 @@ class SampleActivity : AppCompatActivity(), View.OnClickListener {
         dm_player_web_view.setFullscreenButton(mFullscreen)
     }
 
+    private val sessionManagerListener = SessionManagerListenerImpl()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.sample_activity)
 
+        sessionManager = CastContext.getSharedInstance(this).getSessionManager()
+
         setSupportActionBar(toolbar)
+        CastButtonFactory.setUpMediaRouteButton(getApplicationContext(), media_route_button);
 
         if (toolbar != null) {
             toolbar!!.visibility = View.VISIBLE
@@ -71,7 +137,7 @@ class SampleActivity : AppCompatActivity(), View.OnClickListener {
         }
 
         val playerParams = HashMap<String, String>()
-        dm_player_web_view.load("x26hv6c", playerParams as Map<String, Any>?)
+        dm_player_web_view.load(VIDEO_XID, playerParams as Map<String, Any>?)
 
         dm_player_web_view.setEventListener { event, map ->
             when (event) {
@@ -163,17 +229,15 @@ class SampleActivity : AppCompatActivity(), View.OnClickListener {
     override fun onPause() {
         super.onPause()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            dm_player_web_view.onPause()
-        }
+        dm_player_web_view.onPause()
+        sessionManager?.removeSessionManagerListener(sessionManagerListener);
     }
 
     override fun onResume() {
         super.onResume()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            dm_player_web_view.onResume()
-        }
+        dm_player_web_view.onResume()
+        sessionManager?.addSessionManagerListener(sessionManagerListener);
     }
 
     private fun log(text: String) {
