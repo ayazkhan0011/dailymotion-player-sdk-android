@@ -10,7 +10,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:minHeight="@dimen/abc_action_bar_default_height_material">
-
+        <android.support.v7.app.MediaRouteButton
+            android:id="@+id/media_route_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:mediaRouteTypes="user" />
     </android.support.v7.widget.Toolbar>
 
     <com.dailymotion.android.player.sdk.PlayerWebView

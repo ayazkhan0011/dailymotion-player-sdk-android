@@ -15,7 +15,7 @@ import android.widget.LinearLayout
 
 import com.dailymotion.android.player.sdk.PlayerWebView
 import com.dailymotion.websdksample.R
-import kotlinx.android.synthetic.main.new_screen_sample.*
+import kotlinx.android.synthetic.main.sample_activity.*
 
 import java.util.HashMap
 
@@ -53,7 +53,7 @@ class SampleActivity : AppCompatActivity(), View.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.new_screen_sample)
+        setContentView(R.layout.sample_activity)
 
         setSupportActionBar(toolbar)
 
